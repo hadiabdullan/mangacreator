@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '814601238075',
     projectId: 'mangacreator',
     storageBucket: 'mangacreator.firebasestorage.app',
-    iosBundleId: 'com.example.mangacreator',
+    iosBundleId: 'com.hadi.mangacreator',
   );
 }

@@ -9,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts for loca
 
 // Ensure firebase_options.dart is in the same directory or correctly imported
 import 'firebase_options.dart';
+// Access the global navigatorKey
+import 'main.dart'; // <--- Import main.dart to access the global navigatorKey
 
 // The MangaCreatorScreen widget.
 class MangaCreatorScreen extends StatefulWidget {
@@ -78,6 +80,71 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
     super.dispose();
   }
 
+  // --- Helper methods for showing/hiding dialogs ---
+
+  void _showLoadingDialog(String message) {
+    // Use the global navigatorKey
+    if (navigatorKey.currentState == null || !mounted) return;
+
+    // --- FIX: Dismiss any existing dialog before showing a new one ---
+    // Check if a dialog is currently open.
+    bool isDialogShowing = false;
+    navigatorKey.currentState?.popUntil((route) {
+      if (route is PopupRoute && !route.willHandlePopInternally) {
+        isDialogShowing = true;
+        return false; // Found an open dialog, stop popping
+      }
+      return true; // Keep popping until we find a dialog or reach the root
+    });
+
+    if (isDialogShowing) {
+      // If a dialog was showing, hide it before displaying the new one.
+      // This ensures we don't stack dialogs.
+      _hideLoadingDialog();
+    }
+
+    showDialog(
+      context: navigatorKey
+          .currentState!
+          .context, // Use the global navigatorKey's context
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext dialogContext) {
+        return PopScope(
+          // Use PopScope for back button handling
+          canPop: false, // Prevent back button from closing dialog
+          child: AlertDialog(
+            backgroundColor: Theme.of(
+              dialogContext,
+            ).colorScheme.surface, // Use theme surface color
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min, // Keep content compact
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(dialogContext).textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _hideLoadingDialog() {
+    // Use the global navigatorKey
+    if (navigatorKey.currentState != null &&
+        Navigator.of(navigatorKey.currentState!.context).canPop()) {
+      Navigator.of(navigatorKey.currentState!.context).pop();
+    }
+  }
+
   // Asynchronously loads the placeholder image from the 'assets' folder.
   // This is used for initial display or as a fallback if no image is generated yet.
   Future<void> _loadPlaceholderImage() async {
@@ -91,17 +158,69 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
       debugPrint('Placeholder image loaded successfully.');
     } catch (e) {
       debugPrint('Error loading placeholder image: $e');
-      _showSnackBar(
+      _showErrorDialog(
         'Error loading placeholder image. Please check assets/placeholder_manga_panel.png in pubspec.yaml',
       );
     }
+  }
+
+  // New helper for showing error messages in an AlertDialog
+  void _showErrorDialog(String message) {
+    // Use the global navigatorKey
+    if (navigatorKey.currentState == null || !mounted) return;
+
+    // Dismiss any loading dialog if present before showing an error.
+    _hideLoadingDialog(); // <--- Ensure any existing loading dialog is dismissed
+
+    showDialog(
+      context: navigatorKey.currentState!.context,
+      barrierDismissible:
+          true, // Allow dismissing by tapping outside for errors
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: Theme.of(
+            dialogContext,
+          ).colorScheme.errorContainer, // Use an error-themed color
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Error',
+            style: TextStyle(
+              color: Theme.of(dialogContext).colorScheme.onErrorContainer,
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: Theme.of(dialogContext).colorScheme.onErrorContainer,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: Theme.of(dialogContext).colorScheme.onErrorContainer,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Dismiss the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Function to trigger the entire manga panel generation and AI analysis process.
   Future<void> _generateMangaPanel() async {
     final prompt = _panelPromptController.text.trim();
     if (prompt.isEmpty) {
-      _showSnackBar('Please enter a prompt to start your manga panel concept!');
+      _showErrorDialog(
+        'Please enter a prompt to start your manga panel concept!',
+      ); // Changed to error dialog
       return;
     }
 
@@ -112,12 +231,14 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
       _panelGenerationError = null; // Clear previous error message
     });
 
+    _showLoadingDialog(
+      'Generating manga panel image with Imagen...',
+    ); // Show loading dialog
+
     // Initial message for UI feedback; actual suggestions will be parsed later.
     String aiSuggestionsRaw = 'Generating AI suggestions...';
 
     try {
-      _showSnackBar('Generating manga panel image with Imagen...');
-
       // Add specific instructions to guide Imagen to generate a black and white manga-style image.
       // You can experiment with these keywords to fine-tune the style.
       final imagenPrompt =
@@ -141,9 +262,11 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
       _currentGeneratedPanelBytes =
           imageGenerationResponse.images[0].bytesBase64Encoded;
 
-      _showSnackBar(
+      // Now that the first step is done, update the dialog message.
+      // The _showLoadingDialog now handles dismissing the previous one.
+      _showLoadingDialog(
         'Manga panel image generated! Now getting AI analysis and suggestions with Gemini Flash...',
-      );
+      ); // Update loading dialog message
 
       // --- STEP 2: GET AI SUGGESTIONS USING GEMINI FLASH (gemini-2.5-flash-preview-05-20) ---
       // Prepare the image part for the multimodal AI request using the *newly generated* image.
@@ -228,7 +351,9 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
             _panelPromptController.clear();
           });
 
-          _showSnackBar('Panel concept processed and AI suggestions received!');
+          _hideLoadingDialog(); // Hide dialog on success
+          // Optional: Show a brief success message in a separate dialog or snackbar if needed.
+          // _showSnackBar('Panel concept processed and AI suggestions received!');
         } else {
           // Fallback if parsedJson is not a Map, just use raw text for aiDescription
           debugPrint('Parsed JSON was not a Map: $parsedJson');
@@ -243,17 +368,19 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
             );
             _panelPromptController.clear();
           });
-          _showSnackBar(
+          _hideLoadingDialog(); // Hide dialog
+          _showErrorDialog(
             'AI response not perfectly formatted JSON. Displaying raw text.',
-          );
+          ); // Show error dialog
         }
       } catch (e) {
         debugPrint(
           'Failed to parse AI suggestions JSON: $e\nRaw AI response: $cleanAiSuggestions',
         );
-        _showSnackBar(
+        _hideLoadingDialog(); // Hide dialog
+        _showErrorDialog(
           'AI response not perfectly formatted JSON. Displaying raw text.',
-        );
+        ); // Show error dialog
         // If parsing fails, store the raw `aiSuggestionsRaw` string in aiDescription.
         setState(() {
           _mangaPanels.add(
@@ -270,7 +397,10 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
       debugPrint(
         'Error during AI processing: $e',
       ); // Log the full error for debugging
-      _showSnackBar('An error occurred: ${e.toString()}');
+      _hideLoadingDialog(); // Hide dialog on error
+      _showErrorDialog(
+        'Failed to generate or analyze panel: ${e.toString()}',
+      ); // Show error dialog
       setState(() {
         _panelGenerationError =
             'Failed to generate or analyze panel: ${e.toString()}';
@@ -283,12 +413,12 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
     }
   }
 
-  // Helper function to display a temporary message at the bottom of the screen (SnackBar).
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
+  // Removed _showSnackBar as we are using AlertDialogs now.
+  // void _showSnackBar(String message) {
+  //   ScaffoldMessenger.of(
+  //     context,
+  //   ).showSnackBar(SnackBar(content: Text(message)));
+  // }
 
   // Helper function to build a consistent suggestion tile
   Widget _buildSuggestionTile({
@@ -346,7 +476,9 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
         }
       });
     } else {
-      _showSnackBar('Generate at least one panel to start reading!');
+      _showErrorDialog(
+        'Generate at least one panel to start reading!',
+      ); // Changed to error dialog
     }
   }
 
@@ -380,11 +512,10 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true, // This is essential for keyboard handling
       appBar: AppBar(
         title: const Text('AI Collaborative Manga Storyteller'),
-        // AppBar styling is now handled by ThemeData in main.dart
         centerTitle: true,
-        // Add a back button for reader mode
         leading: _isReadingMode
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -392,7 +523,6 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
               )
             : null,
         actions: [
-          // "Read Story" button to switch modes
           if (!_isReadingMode && _mangaPanels.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
@@ -401,9 +531,7 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                 icon: const Icon(Icons.menu_book),
                 label: const Text('Read Story'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.secondary, // Use accent color
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
                   foregroundColor: Theme.of(context).colorScheme.onSecondary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -419,17 +547,16 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
             ),
         ],
       ),
+      // No need for a Builder here anymore
       body: Column(
         children: [
-          // Expanded widget to make the list of panels take available space
           Expanded(
             child: _isReadingMode
-                ? _buildMangaReaderView() // NEW: Reader mode view
+                ? _buildMangaReaderView()
                 : (_mangaPanels.isEmpty
-                      ? _buildEmptyState() // Existing: Empty state view
-                      : _buildCreationListView()), // Existing: Creation mode list view
+                      ? _buildEmptyState()
+                      : _buildCreationListView()),
           ),
-          // Input field and button always visible in creation mode, hidden in reading mode
           if (!_isReadingMode) // Only show input in creation mode
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -438,18 +565,9 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                   Expanded(
                     child: TextField(
                       controller: _panelPromptController,
-                      // InputDecoration is now primarily handled by ThemeData in main.dart
                       decoration: InputDecoration(
                         labelText: 'Describe your next manga panel concept...',
                         hintText: 'e.g., "The warrior draws a gleaming sword."',
-                        suffixIcon: _isLoading
-                            ? const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : null,
                       ),
                       maxLines: null,
                       minLines: 1,
@@ -460,9 +578,8 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                   const SizedBox(width: 12.0),
                   ElevatedButton(
                     onPressed: _isLoading
-                        ? null
-                        : _generateMangaPanel, // Disable button while loading
-                    // ElevatedButton styling is now handled by ThemeData in main.dart
+                        ? null // Disable button while dialog is showing
+                        : _generateMangaPanel,
                     child: _isLoading
                         ? const SizedBox(
                             width: 24,
@@ -471,11 +588,8 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
-                          )
-                        : const Text(
-                            'Generate',
-                            // Text style is now handled by ThemeData in main.dart
-                          ),
+                          ) // Still show a small indicator on button if needed, or remove completely
+                        : const Text('Generate'),
                   ),
                 ],
               ),
@@ -489,65 +603,61 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
 
   // Builds the empty state UI when no panels are generated.
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              '🌟 Welcome to AI Manga Studio! 🌟\n\n'
-              'Type a concept below to generate your first manga panel. '
-              'AI will then provide dynamic suggestions to continue your story!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, color: Colors.grey, height: 1.5),
-            ),
-            const SizedBox(height: 30),
-            if (_placeholderImageBytes != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  16.0,
-                ), // Larger border radius
-                child: Image.memory(
-                  _placeholderImageBytes!,
-                  fit: BoxFit.contain,
-                  height: 250, // Slightly larger
-                  width: 250,
-                ),
-              )
-            else
-              const SizedBox.shrink(), // Or a simple text if placeholder not loaded
-            const SizedBox(height: 30),
-            // Show loading indicator on empty state too
-            _isLoading
-                ? const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.deepPurple,
-                    ), // Use theme color
-                  )
-                : const SizedBox.shrink(),
-          ],
+    // Wrap _buildEmptyState content in a SingleChildScrollView
+    // if the content can ever overflow even without the keyboard.
+    // Given the text and image, it might, so let's make it scrollable.
+    return SingleChildScrollView(
+      // <--- ADDED SingleChildScrollView for empty state
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                '🌟 Welcome to AI Manga Studio! 🌟\n\n'
+                'Type a concept below to generate your first manga panel. '
+                'AI will then provide dynamic suggestions to continue your story!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, color: Colors.grey, height: 1.5),
+              ),
+              const SizedBox(height: 30),
+              if (_placeholderImageBytes != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16.0),
+                  child: Image.memory(
+                    _placeholderImageBytes!,
+                    fit: BoxFit.contain,
+                    height: 250,
+                    width: 250,
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
+              const SizedBox(height: 30),
+              // Removed inline loading indicator here as it's handled by dialog
+              // _isLoading ? ... : const SizedBox.shrink(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Builds the creation mode list view of panels with all details and suggestions.
+  // _buildCreationListView already uses ListView.builder, which is scrollable.
+  // No changes needed here.
   Widget _buildCreationListView() {
     return ListView.builder(
-      // Builds a scrollable list of manga panels
       padding: const EdgeInsets.all(16.0),
       itemCount: _mangaPanels.length,
       itemBuilder: (context, index) {
         final panel = _mangaPanels[index];
         return Card(
-          // Card styling is now handled by ThemeData in main.dart
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Panel Concept Section
                 Text(
                   'Panel ${index + 1} Concept:',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -565,16 +675,13 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                 ),
                 const SizedBox(height: 16.0),
 
-                // Generated Image Section
                 if (panel.imageBytes != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12.0),
                     child: Image.memory(
                       panel.imageBytes!,
-                      fit: BoxFit.fitWidth, // Ensures image fits width
-                      width:
-                          double.infinity, // Image takes full available width
-                      // height is removed, letting the image's aspect ratio dictate it
+                      fit: BoxFit.fitWidth,
+                      width: double.infinity,
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(
                             child: Text('Error loading generated image.'),
@@ -583,8 +690,7 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                   )
                 else
                   Container(
-                    // Fallback if generated image bytes are null
-                    height: 280, // Keep placeholder height for consistency
+                    height: 280,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
@@ -597,8 +703,7 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                       style: TextStyle(color: Colors.red, fontSize: 14),
                     ),
                   ),
-                const SizedBox(height: 20.0), // Increased spacing
-                // AI Vision Section
+                const SizedBox(height: 20.0),
                 Text(
                   'AI\'s Analysis:',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -608,8 +713,7 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                 ),
                 const SizedBox(height: 8.0),
                 Text(
-                  panel
-                      .aiDescription, // Removed "Description:" prefix for cleaner display
+                  panel.aiDescription,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     height: 1.4,
                     color: Colors.black87,
@@ -617,17 +721,15 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                 ),
                 const SizedBox(height: 16.0),
 
-                // Divider for visual separation
                 const Divider(thickness: 1, height: 20, color: Colors.grey),
                 const SizedBox(height: 10.0),
 
-                // Next Scene Ideas Section
                 if (panel.nextSceneIdeas.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Next Scene Ideas (Tap to Draft):', // More action-oriented label
+                        'Next Scene Ideas (Tap to Draft):',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.primary,
@@ -636,18 +738,16 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                       const SizedBox(height: 8.0),
                       ...panel.nextSceneIdeas.map(
                         (idea) => Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 8.0,
-                          ), // Consistent spacing
+                          padding: const EdgeInsets.only(bottom: 8.0),
                           child: _buildSuggestionTile(
                             context: context,
                             text: idea,
-                            icon: Icons.lightbulb_outline, // Suggestive icon
+                            icon: Icons.lightbulb_outline,
                             color: Colors.blue.shade700,
                             onTap: () {
                               _panelPromptController.text = idea;
                               FocusScope.of(context).unfocus();
-                              _showSnackBar('Prompt updated: "$idea"');
+                              // _showSnackBar('Prompt updated: "$idea"'); // Replaced by dialogs
                             },
                           ),
                         ),
@@ -655,7 +755,6 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                       const SizedBox(height: 10.0),
                     ],
                   ),
-                // Dialogue Suggestions Section
                 if (panel.dialogueSuggestions.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,17 +773,16 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                           child: _buildSuggestionTile(
                             context: context,
                             text: dialogue,
-                            icon: Icons.chat_bubble_outline, // Chat icon
+                            icon: Icons.chat_bubble_outline,
                             color: Colors.green.shade700,
                             onTap: () {
-                              // Append dialogue to current prompt
                               _panelPromptController.text +=
                                   (_panelPromptController.text.isEmpty
                                       ? ''
                                       : ' ') +
                                   '\"$dialogue\" ';
                               FocusScope.of(context).unfocus();
-                              _showSnackBar('Dialogue added: \"$dialogue\"');
+                              // _showSnackBar('Dialogue added: \"$dialogue\"'); // Replaced by dialogs
                             },
                           ),
                         ),
@@ -692,7 +790,6 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                       const SizedBox(height: 10.0),
                     ],
                   ),
-                // Sound Effect Section
                 if (panel.soundEffect != 'N/A')
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -708,17 +805,16 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                       _buildSuggestionTile(
                         context: context,
                         text: panel.soundEffect,
-                        icon: Icons.volume_up_outlined, // Sound icon
+                        icon: Icons.volume_up_outlined,
                         color: Colors.redAccent.shade700,
                         onTap: () {
-                          // Append sound effect to current prompt
                           _panelPromptController.text +=
                               (_panelPromptController.text.isEmpty ? '' : ' ') +
-                              '(${panel.soundEffect})'; // Commonly (SFX) format
+                              '(${panel.soundEffect})';
                           FocusScope.of(context).unfocus();
-                          _showSnackBar(
-                            'Sound effect added: \"${panel.soundEffect}\"',
-                          );
+                          // _showSnackBar(
+                          //   'Sound effect added: \"${panel.soundEffect}\"',
+                          // ); // Replaced by dialogs
                         },
                       ),
                       const SizedBox(height: 10.0),
@@ -732,7 +828,8 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
     );
   }
 
-  // NEW: Builds the manga reader view using PageView
+  // _buildMangaReaderView already uses PageView.builder, which is scrollable.
+  // No changes needed here.
   Widget _buildMangaReaderView() {
     return Stack(
       children: [
@@ -752,7 +849,7 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Panel ${index + 1}: ${panel.prompt}', // Show concept
+                    'Panel ${index + 1}: ${panel.prompt}',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -760,16 +857,13 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // The image should now take all available height while maintaining aspect ratio
                   if (panel.imageBytes != null)
                     Expanded(
-                      // Allow image to take available space
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16.0),
                         child: Image.memory(
                           panel.imageBytes!,
-                          fit: BoxFit
-                              .contain, // Ensure entire image is visible within its bounds
+                          fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) =>
                               const Center(
                                 child: Text('Error loading manga panel image.'),
@@ -794,16 +888,6 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                       ),
                     ),
                   const SizedBox(height: 20),
-                  // Optional: Display AI Description or other details in reader mode, but concise.
-                  // For a pure manga reading experience, you might omit this.
-                  // Text(
-                  //   panel.aiDescription,
-                  //   textAlign: TextAlign.center,
-                  //   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  //     color: Colors.grey.shade700,
-                  //     fontStyle: FontStyle.italic,
-                  //   ),
-                  // ),
                 ],
               ),
             );
@@ -848,21 +932,20 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
 
 // Data model for a single manga panel.
 class MangaPanel {
-  final Uint8List? imageBytes; // Stores the raw bytes of the GENERATED image
-  final String prompt; // The user's text concept for this panel
-  final String aiDescription; // The AI's description of this panel
-  final List<String> nextSceneIdeas; // Store next scene ideas as a list
-  final List<String>
-  dialogueSuggestions; // Store dialogue suggestions as a list
-  final String soundEffect; // Store sound effect
+  final Uint8List? imageBytes;
+  final String prompt;
+  final String aiDescription;
+  final List<String> nextSceneIdeas;
+  final List<String> dialogueSuggestions;
+  final String soundEffect;
 
   // Constructor to initialize a MangaPanel object.
   MangaPanel({
     required this.imageBytes,
     required this.prompt,
     required this.aiDescription,
-    this.nextSceneIdeas = const [], // Default to empty list
-    this.dialogueSuggestions = const [], // Default to empty list
-    this.soundEffect = 'N/A', // Default value
+    this.nextSceneIdeas = const [],
+    this.dialogueSuggestions = const [],
+    this.soundEffect = 'N/A',
   });
 }

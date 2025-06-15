@@ -1,4 +1,4 @@
-package com.example.mangacreator
+package com.hadi.mangacreator
 
 import io.flutter.embedding.android.FlutterActivity
 

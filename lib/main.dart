@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_ai/firebase_ai.dart'; // Ensure firebase_ai is imported
-import 'dart:typed_data'; // Essential for Uint8List
+// Note: firebase_ai and other specific imports are often not directly used in main.dart
+// but are included here for completeness based on previous context.
+import 'package:firebase_ai/firebase_ai.dart';
+import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert'; // For jsonDecode
+import 'dart:convert';
 
-import 'firebase_options.dart'; // Your Firebase options file
-import 'manga_creator_screen.dart'; // Your main screen widget
+import 'firebase_options.dart';
+import 'manga_creator_screen.dart';
+
+// Define a GlobalKey for the Navigator
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +21,7 @@ void main() async {
   runApp(
     MaterialApp(
       title: 'AI Manga Storyteller',
+      navigatorKey: navigatorKey, // <--- Assign the global key here
       theme: ThemeData(
         // Use a more modern color scheme
         colorScheme: ColorScheme.fromSeed(
