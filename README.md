@@ -1,10 +1,11 @@
 # AI Collaborative Manga Storyteller 📖✨
 
 <p style="text-align: center;">
-  <img src="images/app_screenshot_1.png" width="23%" />
-  <img src="images/app_screenshot_2.png" width="23%" />
-  <img src="images/app_screenshot_3.png" width="23%" />
-  <img src="images/app_screenshot_4.png" width="23%" />
+  <img src="images/app_screenshot_1.png" width="19%" />
+  <img src="images/app_screenshot_2.png" width="19%" />
+  <img src="images/app_screenshot_3.png" width="19%" />
+  <img src="images/app_screenshot_5.png" width="19%" />
+  <img src="images/app_screenshot_4.png" width="19%" />
 </p>
 
 ## Unveiling Stories, One Panel at a Time
