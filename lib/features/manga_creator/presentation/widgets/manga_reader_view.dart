@@ -31,7 +31,6 @@ class _MangaReaderViewState extends State<MangaReaderView> {
   @override
   void didUpdateWidget(covariant MangaReaderView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the initial page index changes from parent (e.g., exiting reader mode and re-entering)
     if (widget.initialPageIndex != oldWidget.initialPageIndex) {
       if (_pageController.hasClients) {
         _pageController.jumpToPage(widget.initialPageIndex);
@@ -47,11 +46,9 @@ class _MangaReaderViewState extends State<MangaReaderView> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to the Cubit's state to potentially update the PageController
     return BlocListener<MangaCreatorCubit, MangaCreatorState>(
       listener: (context, state) {
         if (state is MangaCreatorLoaded && _pageController.hasClients) {
-          // Animate to the page index managed by the Cubit
           if (_pageController.page?.round() != state.currentPageIndex) {
             _pageController.animateToPage(
               state.currentPageIndex,
@@ -67,7 +64,6 @@ class _MangaReaderViewState extends State<MangaReaderView> {
             controller: _pageController,
             itemCount: widget.panels.length,
             onPageChanged: (index) {
-              // Inform the Cubit of the page change
               context.read<MangaCreatorCubit>().setPageIndex(index);
             },
             itemBuilder: (context, index) {
@@ -125,7 +121,6 @@ class _MangaReaderViewState extends State<MangaReaderView> {
               );
             },
           ),
-          // Navigation buttons need to respond to the Cubit's currentPageIndex
           BlocBuilder<MangaCreatorCubit, MangaCreatorState>(
             builder: (context, state) {
               final int currentPageIndex = (state is MangaCreatorLoaded)
@@ -133,41 +128,54 @@ class _MangaReaderViewState extends State<MangaReaderView> {
                   : 0;
               final int totalPanels = widget.panels.length;
 
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Left Arrow
-                  if (currentPageIndex > 0)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.arrow_back_ios,
-                          size: 40,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.7),
-                        ),
-                        onPressed: () => context
-                            .read<MangaCreatorCubit>()
-                            .goToPreviousPanel(),
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 56), // Placeholder to keep alignment
-                  // Right Arrow
-                  if (currentPageIndex < totalPanels - 1)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_forward_ios),
-                        onPressed: () =>
-                            context.read<MangaCreatorCubit>().goToNextPanel(),
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 56), // Placeholder to keep alignment
-                ],
+              return Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 60),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Left Arrow
+                      if (currentPageIndex > 0)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.arrow_back_ios,
+                              color: Colors.black,
+                              size: 30,
+                            ),
+                            onPressed: () => context
+                                .read<MangaCreatorCubit>()
+                                .goToPreviousPanel(),
+                          ),
+                        )
+                      else
+                        const SizedBox(
+                          width: 56,
+                        ), // Placeholder to keep alignment
+                      // Right Arrow
+                      if (currentPageIndex < totalPanels - 1)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.black,
+                              size: 30,
+                            ),
+                            onPressed: () => context
+                                .read<MangaCreatorCubit>()
+                                .goToNextPanel(),
+                          ),
+                        )
+                      else
+                        const SizedBox(
+                          width: 56,
+                        ), // Placeholder to keep alignment
+                    ],
+                  ),
+                ),
               );
             },
           ),

@@ -30,20 +30,22 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('AI Collaborative Manga Storyteller'),
+        backgroundColor: Colors.transparent,
+        title: const Text(
+          'Manga Storyteller',
+          style: TextStyle(color: Colors.black),
+        ),
         centerTitle: true,
-        leading: BlocBuilder<MangaCreatorCubit, MangaCreatorState>(
-          builder: (context, state) {
-            if (state is MangaCreatorLoaded && state.isReadingMode) {
-              return IconButton(
-                icon: const Icon(Icons.arrow_back),
+        leading:
+            (context.watch<MangaCreatorCubit>().state is MangaCreatorLoaded &&
+                (context.watch<MangaCreatorCubit>().state as MangaCreatorLoaded)
+                    .isReadingMode)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
                 onPressed: () =>
                     context.read<MangaCreatorCubit>().toggleReadingMode(),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+              )
+            : null,
         actions: [
           BlocBuilder<MangaCreatorCubit, MangaCreatorState>(
             builder: (context, state) {
@@ -88,7 +90,6 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
             DialogUtils.hideLoadingDialog();
             DialogUtils.showErrorDialog(state.message);
           }
-          // The loading dialog is managed by DialogUtils directly called from the Cubit
         },
         builder: (context, state) {
           final List<MangaPanel> panels = (state is MangaCreatorLoaded)
@@ -111,9 +112,8 @@ class _MangaCreatorScreenState extends State<MangaCreatorScreen> {
                         initialPageIndex: currentPageIndex,
                       )
                     : (panels.isEmpty
-                          ? const EmptyStateView() // Now a dedicated widget
+                          ? const EmptyStateView()
                           : CreationListView(
-                              // Now a dedicated widget
                               panels: panels,
                               promptController: _panelPromptController,
                             )),

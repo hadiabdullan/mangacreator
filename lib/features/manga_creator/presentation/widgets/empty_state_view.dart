@@ -20,7 +20,6 @@ class _EmptyStateViewState extends State<EmptyStateView> {
     _loadPlaceholderImage();
   }
 
-  // Asynchronously loads the placeholder image from the 'assets' folder.
   Future<void> _loadPlaceholderImage() async {
     try {
       final ByteData data = await rootBundle.load(
@@ -31,11 +30,8 @@ class _EmptyStateViewState extends State<EmptyStateView> {
           _placeholderImageBytes = data.buffer.asUint8List();
         });
       }
-      debugPrint('Placeholder image loaded successfully.');
     } catch (e) {
-      debugPrint('Error loading placeholder image in EmptyStateView: $e');
       // Note: We don't show a dialog here, as it's a UI component.
-      // Any error handling (like a snackbar) should be done in the parent screen.
     }
   }
 
@@ -49,7 +45,7 @@ class _EmptyStateViewState extends State<EmptyStateView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                '🌟 Welcome to AI Manga Studio! 🌟\n\n'
+                'Welcome to AI Manga Studio!\n\n'
                 'Type a concept below to generate your first manga panel. '
                 'AI will then provide dynamic suggestions to continue your story!',
                 textAlign: TextAlign.center,
@@ -62,7 +58,7 @@ class _EmptyStateViewState extends State<EmptyStateView> {
                   child: Image.memory(
                     _placeholderImageBytes!,
                     fit: BoxFit.contain,
-                    height: 250,
+                    height: 500,
                     width: 250,
                   ),
                 )

@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../../core/models/manga_panel.dart';
 import '../../../../core/utils/dialogue_utils.dart';
@@ -11,10 +10,9 @@ class MangaCreatorCubit extends Cubit<MangaCreatorState> {
 
   MangaCreatorCubit(this._aiService) : super(MangaCreatorInitial());
 
-  // Internal list to manage panels before emitting state
   final List<MangaPanel> _panels = [];
 
-  List<MangaPanel> get currentPanels => _panels; // Getter for external access
+  List<MangaPanel> get currentPanels => _panels;
 
   Future<void> generatePanel(String prompt) async {
     if (prompt.isEmpty) {
@@ -28,41 +26,31 @@ class MangaCreatorCubit extends Cubit<MangaCreatorState> {
 
     emit(
       const MangaCreatorLoading('Preparing to generate your manga panel...'),
-    ); // Initial loading state
+    );
 
     try {
-      // Use AiService to generate the panel, passing a progress callback
       final newPanel = await _aiService.generateMangaPanel(
         prompt: prompt,
         onProgressUpdate: (message) {
-          // Emit a loading state with updated message, keeping current panels if available
           if (state is MangaCreatorLoaded) {
             emit(
               (state as MangaCreatorLoaded).copyWith(
-                panels:
-                    _panels, // Ensure panels are preserved during internal loading
-                isReadingMode:
-                    false, // Ensure not in reading mode during creation
+                panels: _panels,
+                isReadingMode: false,
               ),
             );
           }
-          // The DialogUtils handles showing the actual dialog overlay
           DialogUtils.showLoadingDialog(message);
         },
       );
 
-      _panels.add(newPanel); // Add the new panel to our internal list
-      DialogUtils.hideLoadingDialog(); // Hide loading dialog on success
+      _panels.add(newPanel);
+      DialogUtils.hideLoadingDialog();
 
-      emit(
-        MangaCreatorLoaded(panels: List.from(_panels)),
-      ); // Emit loaded state with all panels
+      emit(MangaCreatorLoaded(panels: List.from(_panels)));
     } catch (e) {
-      debugPrint('Error generating panel in Cubit: $e');
-      DialogUtils.hideLoadingDialog(); // Ensure dialog is hidden on error
-      emit(
-        MangaCreatorError('Failed to generate panel: ${e.toString()}'),
-      ); // Emit error state
+      DialogUtils.hideLoadingDialog();
+      emit(MangaCreatorError('Failed to generate panel: ${e.toString()}'));
     }
   }
 
@@ -80,7 +68,6 @@ class MangaCreatorCubit extends Cubit<MangaCreatorState> {
     if (currentState is MangaCreatorLoaded) {
       emit(currentState.copyWith(isReadingMode: !currentState.isReadingMode));
     } else {
-      // If we are in initial or error state, transition to loaded and then toggle
       emit(MangaCreatorLoaded(panels: List.from(_panels), isReadingMode: true));
     }
   }
@@ -116,7 +103,6 @@ class MangaCreatorCubit extends Cubit<MangaCreatorState> {
     }
   }
 
-  // Clear all panels (e.g., for a "start new story" feature)
   void clearPanels() {
     _panels.clear();
     emit(MangaCreatorInitial());

@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../main.dart'; // Import main.dart to access navigatorKey
+import '../../main.dart';
 
 class DialogUtils {
-  // Internal tracker for whether a dialog is currently open.
-  // This is a simple approach. For more complex apps, consider a state management solution
-  // or a more robust navigator observer.
   static bool _isDialogShowing = false;
 
   static void showLoadingDialog(String message) {
     if (navigatorKey.currentContext == null) return; // Use currentContext
 
-    // Dismiss any existing dialog before showing a new one.
-    // This is crucial to prevent stacking.
     if (_isDialogShowing) {
       hideLoadingDialog();
     }
 
-    _isDialogShowing = true; // Mark dialog as showing
+    _isDialogShowing = true;
 
     showDialog(
       context: navigatorKey.currentContext!,
@@ -46,7 +41,7 @@ class DialogUtils {
         );
       },
     ).then((_) {
-      _isDialogShowing = false; // Reset flag when dialog is dismissed
+      _isDialogShowing = false;
     });
   }
 
@@ -60,7 +55,6 @@ class DialogUtils {
   static void showErrorDialog(String message) {
     if (navigatorKey.currentContext == null) return;
 
-    // Ensure loading dialog is dismissed before showing error
     hideLoadingDialog();
 
     showDialog(

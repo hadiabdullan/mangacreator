@@ -3,14 +3,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-import 'package:flutter_bloc/flutter_bloc.dart'; // Import flutter_bloc
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'features/manga_creator/data/services/ai_service.dart';
 import 'features/manga_creator/presentation/bloc/manga_creator_cubit.dart';
 import 'features/manga_creator/presentation/manga_creator_screen.dart';
 import 'firebase_options.dart';
 
-// Define a GlobalKey for the Navigator
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
@@ -31,7 +30,7 @@ void main() async {
           onSecondary: Colors.white,
           surface: Colors.white,
           onSurface: Colors.black87,
-          background: Colors.deepPurple.shade50,
+          surfaceBright: Colors.deepPurple.shade50,
         ),
         useMaterial3: true,
         textTheme: GoogleFonts.zillaSlabTextTheme(
@@ -100,11 +99,8 @@ void main() async {
         ),
       ),
       home: BlocProvider(
-        // Provide the MangaCreatorCubit
-        create: (context) =>
-            MangaCreatorCubit(AiService()), // Create an instance of the Cubit
-        child:
-            const MangaCreatorScreen(), // The screen that will consume the Cubit
+        create: (context) => MangaCreatorCubit(AiService()),
+        child: const MangaCreatorScreen(),
       ),
       debugShowCheckedModeBanner: false,
     ),

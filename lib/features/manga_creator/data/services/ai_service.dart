@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/models/manga_panel.dart';
 
-// A service class to handle all AI-related operations.
 class AiService {
   late final GenerativeModel _geminiFlashModel;
   late final ImagenModel _imagenModel;
@@ -18,23 +17,19 @@ class AiService {
     );
   }
 
-  // Generates a manga panel image and gets AI suggestions.
-  // This method will now return the generated MangaPanel object or throw an error.
   Future<MangaPanel> generateMangaPanel({
     required String prompt,
-    // Callback for progress updates to be shown in UI (e.g., via dialog)
     required ValueChanged<String> onProgressUpdate,
   }) async {
     if (prompt.isEmpty) {
       throw Exception('Prompt cannot be empty.');
     }
 
-    onProgressUpdate('Generating manga panel image with Imagen...');
+    onProgressUpdate('Generating manga panel image...');
 
     final imagenPrompt =
         "black and white manga panel, highly detailed, comic art style, dynamic lines, action lines, screentones, ink drawing, Japanese manga style, $prompt";
 
-    // --- STEP 1: GENERATE IMAGE USING IMAGEN (imagen-3.0-generate-002) ---
     final imageGenerationResponse = await _imagenModel.generateImages(
       imagenPrompt,
     );
@@ -49,11 +44,10 @@ class AiService {
         imageGenerationResponse.images[0].bytesBase64Encoded;
 
     onProgressUpdate(
-      'Manga panel image generated! Now getting AI analysis and suggestions with Gemini Flash...',
+      'Manga panel image generated! Now getting AI analysis and suggestions...',
     );
 
-    // --- STEP 2: GET AI SUGGESTIONS USING GEMINI FLASH (gemini-2.5-flash-preview-05-20) ---
-    final imagePart = InlineDataPart('image/png', generatedImageBytes!);
+    final imagePart = InlineDataPart('image/png', generatedImageBytes);
 
     final multimodalPromptContent = Content.multi([
       TextPart('''
@@ -78,7 +72,6 @@ class AiService {
     String aiSuggestionsRaw =
         aiResponse.text ?? 'AI did not return specific suggestions.';
 
-    // Clean the AI's response string before parsing JSON
     String cleanAiSuggestions = aiSuggestionsRaw.trim();
     if (cleanAiSuggestions.startsWith('```json')) {
       cleanAiSuggestions = cleanAiSuggestions.substring('```json'.length);
@@ -116,8 +109,6 @@ class AiService {
           soundEffect: sfx,
         );
       } else {
-        debugPrint('Parsed JSON was not a Map: $parsedJson');
-        // Return a panel with raw description if JSON format is unexpected
         return MangaPanel(
           imageBytes: generatedImageBytes,
           prompt: prompt,
@@ -125,9 +116,6 @@ class AiService {
         );
       }
     } catch (e) {
-      debugPrint(
-        'Failed to parse AI suggestions JSON: $e\nRaw AI response: $cleanAiSuggestions',
-      );
       // Return a panel with raw description if JSON parsing fails
       return MangaPanel(
         imageBytes: generatedImageBytes,

@@ -16,30 +16,27 @@ class SuggestionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // <--- This is the build method
     return GestureDetector(
-      // Using GestureDetector instead of InkWell for simpler example
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1), // Light background for the tile
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(color: color, width: 1.0),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min, // Wrap content horizontally
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: color), // Small icon
+            Icon(icon, size: 18, color: color),
             const SizedBox(width: 8.0),
             Flexible(
-              // Allow text to wrap if it's too long
               child: Text(
                 text,
                 style: TextStyle(
                   fontSize: 15,
                   color: color,
-                  fontWeight: FontWeight.w500, // Slightly bolder
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

@@ -8,7 +8,6 @@ class MangaPanel {
   final List<String> dialogueSuggestions;
   final String soundEffect;
 
-  // Constructor to initialize a MangaPanel object.
   MangaPanel({
     required this.imageBytes,
     required this.prompt,

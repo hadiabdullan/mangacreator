@@ -1,8 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../../core/models/manga_panel.dart'; // Ensure correct import
+import '../../../../core/models/manga_panel.dart';
 
-// Base class for all MangaCreator states
 abstract class MangaCreatorState extends Equatable {
   const MangaCreatorState();
 
@@ -10,10 +9,8 @@ abstract class MangaCreatorState extends Equatable {
   List<Object?> get props => [];
 }
 
-// Initial state, before any action is taken
 class MangaCreatorInitial extends MangaCreatorState {}
 
-// State when an operation (like generating a panel) is in progress
 class MangaCreatorLoading extends MangaCreatorState {
   final String message;
   const MangaCreatorLoading(this.message);
@@ -22,11 +19,10 @@ class MangaCreatorLoading extends MangaCreatorState {
   List<Object?> get props => [message];
 }
 
-// State when a panel has been successfully loaded/generated
 class MangaCreatorLoaded extends MangaCreatorState {
   final List<MangaPanel> panels;
   final bool isReadingMode;
-  final int currentPageIndex; // Keep track for reader mode
+  final int currentPageIndex;
 
   const MangaCreatorLoaded({
     required this.panels,
@@ -34,7 +30,6 @@ class MangaCreatorLoaded extends MangaCreatorState {
     this.currentPageIndex = 0,
   });
 
-  // Helper method to create a new state with modified values
   MangaCreatorLoaded copyWith({
     List<MangaPanel>? panels,
     bool? isReadingMode,
@@ -51,7 +46,6 @@ class MangaCreatorLoaded extends MangaCreatorState {
   List<Object?> get props => [panels, isReadingMode, currentPageIndex];
 }
 
-// State when an error occurs
 class MangaCreatorError extends MangaCreatorState {
   final String message;
   const MangaCreatorError(this.message);

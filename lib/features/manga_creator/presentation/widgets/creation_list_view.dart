@@ -36,7 +36,7 @@ class CreationListView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4.0),
                 Text(
-                  '\"${panel.prompt}\"',
+                  '"${panel.prompt}"',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontStyle: FontStyle.italic,
                     color: Colors.black87,
@@ -105,22 +105,20 @@ class CreationListView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8.0),
-                      ...panel.nextSceneIdeas
-                          .map(
-                            (idea) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: SuggestionTile(
-                                text: idea,
-                                icon: Icons.lightbulb_outline,
-                                color: Colors.blue.shade700,
-                                onTap: () {
-                                  promptController.text = idea;
-                                  FocusScope.of(context).unfocus();
-                                },
-                              ),
-                            ),
-                          )
-                          .toList(), // ADDED .toList()
+                      ...panel.nextSceneIdeas.map(
+                        (idea) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: SuggestionTile(
+                            text: idea,
+                            icon: Icons.lightbulb_outline,
+                            color: Colors.blue.shade700,
+                            onTap: () {
+                              promptController.text = idea;
+                              FocusScope.of(context).unfocus();
+                            },
+                          ),
+                        ),
+                      ), // ADDED .toList()
                       const SizedBox(height: 10.0),
                     ],
                   ),
@@ -136,26 +134,21 @@ class CreationListView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8.0),
-                      ...panel.dialogueSuggestions
-                          .map(
-                            (dialogue) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: SuggestionTile(
-                                text: dialogue,
-                                icon: Icons.chat_bubble_outline,
-                                color: Colors.green.shade700,
-                                onTap: () {
-                                  promptController.text +=
-                                      (promptController.text.isEmpty
-                                          ? ''
-                                          : ' ') +
-                                      '\"$dialogue\" ';
-                                  FocusScope.of(context).unfocus();
-                                },
-                              ),
-                            ),
-                          )
-                          .toList(), // ADDED .toList()
+                      ...panel.dialogueSuggestions.map(
+                        (dialogue) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: SuggestionTile(
+                            text: dialogue,
+                            icon: Icons.chat_bubble_outline,
+                            color: Colors.green.shade700,
+                            onTap: () {
+                              promptController.text +=
+                                  '${promptController.text.isEmpty ? '' : ' '}"$dialogue" ';
+                              FocusScope.of(context).unfocus();
+                            },
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 10.0),
                     ],
                   ),
@@ -177,8 +170,7 @@ class CreationListView extends StatelessWidget {
                         color: Colors.redAccent.shade700,
                         onTap: () {
                           promptController.text +=
-                              (promptController.text.isEmpty ? '' : ' ') +
-                              '(${panel.soundEffect})';
+                              '${promptController.text.isEmpty ? '' : ' '}(${panel.soundEffect})';
                           FocusScope.of(context).unfocus();
                         },
                       ),
